@@ -225,10 +225,3 @@ when defined(js) and defined(ReactivePlatformWeb):
             element.style.setProperty("top", this.y)
             element.style.setProperty("width", this.width)
             element.style.setProperty("height", this.height)
-            
-            
-
-
-## Called when being run as a binary
-when isMainModule:
-    

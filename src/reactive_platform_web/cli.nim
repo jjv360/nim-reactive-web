@@ -2,28 +2,24 @@ import reactive/utils
 import std/os
 import std/osproc
 import std/strutils
+import std/json
 
-# Fetch command line
-let args = processCommandLine()
-
-# Fetch input file
-let appEntryPath = absoluteInputFilePath(args)
+# Fetch build args
+let buildInfo = getReactiveBuildInfo()
 
 # Begin building
-echo "Building app for web: " & appEntryPath
-let returnCode = startProcess("nim", workingDir=absolutePath(appEntryPath / ".."), options={poUsePath, poParentStreams}, args=[
+let returnCode = startProcess("nim", options={poUsePath, poParentStreams}, args=[
     "js", 
     "--app:gui",
     "--define:release",
     "--define:ReactivePlatformWeb",
-    "--define:ReactiveAppEntryFile:" & appEntryPath,
     # "--define:debugclasses",
-    "--out:" & absolutePath(appEntryPath / ".." / "dist" / "app.js"),
-    appEntryPath
+    "--out:" & absolutePath(buildInfo["projectRoot"] / "dist" / "web" / "app.js"),
+    $buildInfo["entrypoint"]
 ]).waitForExit()
 
 # Write a wrapper HTML file
-writeFile(appEntryPath / ".." / "dist" / "app.html", """
+writeFile(absolutePath(buildInfo["projectRoot"] / "dist" / "web" / "app.html"), """
     <!DOCTYPE html>
     <html>
     <head>

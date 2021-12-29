@@ -1,11 +1,11 @@
-import reactive/utils
+import reactivepkg/utils
 import std/os
 import std/osproc
 import std/strutils
 import std/json
 
 # Fetch build args
-let buildInfo = getReactiveBuildInfo()
+let buildInfo = getReactiveBuildOptions()
 
 # Begin building
 let returnCode = startProcess("nim", options={poUsePath, poParentStreams}, args=[
@@ -13,13 +13,14 @@ let returnCode = startProcess("nim", options={poUsePath, poParentStreams}, args=
     "--app:gui",
     "--define:release",
     "--define:ReactivePlatformWeb",
+    "--define:ReactiveInjectImports:reactive_platform_web",
     # "--define:debugclasses",
-    "--out:" & absolutePath(buildInfo["projectRoot"] / "dist" / "web" / "app.js"),
-    $buildInfo["entrypoint"]
+    "--out:" & absolutePath(buildInfo["projectRoot"].getStr() / "dist" / "web" / "app.js"),
+    buildInfo["entrypoint"].getStr()
 ]).waitForExit()
 
 # Write a wrapper HTML file
-writeFile(absolutePath(buildInfo["projectRoot"] / "dist" / "web" / "app.html"), """
+writeFile(absolutePath(buildInfo["projectRoot"].getStr() / "dist" / "web" / "app.html"), """
     <!DOCTYPE html>
     <html>
     <head>

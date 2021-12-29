@@ -2,10 +2,10 @@
 ## Entry point fo rthe web platform plugin
 
 import classes
-import reactive/plugins
-import reactive/components
-import reactive/config
-import reactive/componentTree
+import reactivepkg/plugins
+import reactivepkg/components
+import reactivepkg/config
+import reactivepkg/componentTree
 
 # JS specific imports
 when defined(js):

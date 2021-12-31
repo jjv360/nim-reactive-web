@@ -8,45 +8,31 @@ import reactivepkg/config
 import reactivepkg/componentTree
 
 # JS specific imports
-when defined(js):
+when defined(ReactivePlatformWeb):
     import std/dom except Window, class
 
-    # I'm importing native JS references directly instead of using std/dom, since that library seems to cause all
-    # sorts of issues with common names, like Window, class, etc, and Nim always defaults to using those for some reason.
-    # proc innerText(elem: Element): string {. importjs: "#.innerText" .}
-    # proc `innerText=`(elem: Element, content: string) {. importjs: "function(txt) { #.innerText = @ }" .}
 
-## Plugin to provide the Web platform
-class WebPlatform of ReactivePlugin:
-
-    ## We provide the web platform
-    method providesPlatformID(): string = "web"
-
-    ## Called on app startup
-    method onPlatformStartup() =
-
-        # Only do in JS mode
-        when defined(js):
-
-            # Platform starting!
-            echo "[Web Platform] Starting!"
-
-            # Get main component
-            let componentID = ReactiveConfig.shared.get("web", "mainWindow")
-            
-            # Render the specified component tree
-            let componentTree = ComponentTree.withRegisteredComponent(componentID)
+    ## Prepare the app to be started
+    proc prepareReactiveAppPlatform*() =
+        discard
 
 
-## Register our plugin
-ReactivePlugins.shared.register(WebPlatform.new())
+    ## Start the app
+    proc startReactiveAppPlatform*() =
+
+        # Platform starting!
+        echo "[Web Platform] Starting!"
+
+        # Get main component
+        let componentID = ReactiveConfig.shared.get("web", "mainWindow")
         
+        # Render the specified component tree
+        let componentTree = ComponentTree.withRegisteredComponent(componentID)
 
-## Check if we're inside a Web platform build
-when defined(js) and defined(ReactivePlatformWeb):
-    
-    # Register our platform as the active build platform
-    ReactivePlugins.shared.activePlatformID = "web"
+        # Normally this would be a non-returning function, but in JS we use the browser's event loop,
+        # so we don't need to runForever() here.
+        # runForever()
+
 
     ## Base class for web layouts
     class WebLayout of BaseLayout:
@@ -63,11 +49,6 @@ when defined(js) and defined(ReactivePlatformWeb):
 
         # Mark this as a web component
         var platformSpecificType = "web"
-
-        ## Get component as instance of Component
-        # method fromBase(base: BaseComponent): Component {.static.} =
-        #     if base.platformSpecificType == "web": return Component(base)
-        #     else: return nil
 
         # Get most recent ancestor with a valid element
         method parentElement(): Element =
@@ -154,6 +135,9 @@ when defined(js) and defined(ReactivePlatformWeb):
     ## Label, displays some text
     component Label:
 
+        # Text
+        var text = ""
+
         # Style properties
         var textColor = ""
 
@@ -168,11 +152,16 @@ when defined(js) and defined(ReactivePlatformWeb):
         method onPlatformUpdate() =
 
             # Update text
-            for child in this.children:
-                if child.className == "Text":
-                    let text = Text(child).internalTextContent
-                    this.element.innerText = text
-                    break
+            this.element.innerText = this.text
+
+
+        ## Called when new properties are incoming
+        method updateProperties(newProps: BaseComponent) = 
+            super.updateProperties(newProps)
+
+            # Copy generic props
+            this.text = newProps.Label().text
+            this.textColor = newProps.Label().textColor
 
     
     ## Button component
@@ -200,6 +189,15 @@ when defined(js) and defined(ReactivePlatformWeb):
             # Register events
             if this.onClick != nil: this.element.onClick = proc(_: Event) = this.onClick()
 
+
+        ## Called when new properties are incoming
+        method updateProperties(newProps: BaseComponent) = 
+            super.updateProperties(newProps)
+
+            # Copy generic props
+            this.title = newProps.Button().title
+            this.onClick = newProps.Button().onClick
+
     
     ##
     ## Absolute layout. This layout system simply moves the object to an absolute position within it's parent.
@@ -225,3 +223,11 @@ when defined(js) and defined(ReactivePlatformWeb):
             element.style.setProperty("top", this.y)
             element.style.setProperty("width", this.width)
             element.style.setProperty("height", this.height)
+
+
+    # System alert dialog icons
+    type AlertIconType* = enum information, warning, question
+
+    # System alert dialog ... on web, only the text field is supported
+    proc alert*(text: string, title: string = "", icon: AlertIconType = information) =
+        window.alert(text)
